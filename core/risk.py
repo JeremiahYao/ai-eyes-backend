@@ -1,12 +1,21 @@
-OBJECT_WEIGHTS = {
-    "person": 1.0,
-    "car": 1.5,
-    "bus": 1.7,
-    "bicycle": 1.2
-}
+"""
+Risk assessment logic.
+"""
 
-def compute_risk(distance_m, confidence, class_name):
-    weight = OBJECT_WEIGHTS.get(class_name, 0.5)
+def assess_risk(object_name, distance_m):
     if distance_m is None:
-        return 0
-    return (1 / distance_m) * confidence * weight
+        return "unknown"
+
+    if object_name in ["car", "bus", "truck", "motorcycle"]:
+        if distance_m < 5:
+            return "high"
+        elif distance_m < 10:
+            return "medium"
+        else:
+            return "low"
+
+    if object_name in ["person", "bicycle"]:
+        if distance_m < 3:
+            return "medium"
+
+    return "low"
