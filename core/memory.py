@@ -1,24 +1,43 @@
 # core/memory.py
 
 class TemporalMemory:
-    def __init__(self, cooldown_frames=5):
+    def __init__(self, cooldown_frames=5, distance_threshold=0.5):
         self.last_object = None
+        self.last_distance = None
         self.cooldown = 0
         self.cooldown_frames = cooldown_frames
+        self.distance_threshold = distance_threshold
 
-    def should_alert(self, current_object):
+    def analyze(self, current):
         """
-        Decide whether to speak based on recent history.
+        Returns: (should_alert, motion)
+        motion = 'approaching', 'receding', or None
         """
-        if current_object is None:
+        if current is None:
             self.last_object = None
+            self.last_distance = None
             self.cooldown = 0
-            return False
+            return False, None
 
-        if self.cooldown > 0 and current_object["object"] == self.last_object:
+        motion = None
+
+        if (
+            self.last_object == current["object"]
+            and self.last_distance is not None
+            and current["distance_m"] is not None
+        ):
+            delta = self.last_distance - current["distance_m"]
+            if abs(delta) > self.distance_threshold:
+                motion = "approaching" if delta > 0 else "receding"
+
+        if self.cooldown > 0:
             self.cooldown -= 1
-            return False
+            alert = False
+        else:
+            alert = True
+            self.cooldown = self.cooldown_frames
 
-        self.last_object = current_object["object"]
-        self.cooldown = self.cooldown_frames
-        return True
+        self.last_object = current["object"]
+        self.last_distance = current["distance_m"]
+
+        return alert, motion
