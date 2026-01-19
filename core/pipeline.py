@@ -20,12 +20,7 @@ def run_navigation_pipeline(left_image, right_image, metadata, prev_results=None
         bbox = det.get("bbox")
 
         # Distance estimation (may return None)
-        distance = estimate_distance(
-            bbox=bbox,
-            left_image=left_image,
-            right_image=right_image,
-            metadata=metadata
-        )
+       distance = estimate_distance(bbox, metadata)
 
         # Risk assessment MUST allow None
         risk = assess_risk(label, distance)
