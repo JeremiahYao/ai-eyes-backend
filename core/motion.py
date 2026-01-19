@@ -1,30 +1,33 @@
+# core/motion.py
+
 """
-Motion estimation using bounding box size changes.
+Simple motion analysis across frames.
+(Currently defaults to stationary — safe placeholder)
 """
 
-def estimate_motion(prev_bbox, curr_bbox, threshold=0.05):
+_previous_bboxes = {}
+
+
+def analyze_motion(results):
     """
-    prev_bbox, curr_bbox: [x1, y1, x2, y2] or None
+    Adds a 'motion' field to each detection.
+    Currently assumes stationary (placeholder logic).
     """
 
-    # ✅ First frame or missing data
-    if prev_bbox is None or curr_bbox is None:
-        return "unknown"
+    global _previous_bboxes
 
-    def area(b):
-        return (b[2] - b[0]) * (b[3] - b[1])
+    for r in results:
+        obj = r.get("object")
+        bbox = r.get("bbox")
 
-    prev_area = area(prev_bbox)
-    curr_area = area(curr_bbox)
+        if bbox is None:
+            r["motion"] = "unknown"
+            continue
 
-    if prev_area == 0:
-        return "unknown"
+        # Placeholder logic
+        r["motion"] = "stationary"
 
-    change = (curr_area - prev_area) / prev_area
+        # Store for future frames
+        _previous_bboxes[obj] = bbox
 
-    if change > threshold:
-        return "approaching"
-    elif change < -threshold:
-        return "receding"
-    else:
-        return "stationary"
+    return results
