@@ -1,25 +1,38 @@
-IMPORTANT_OBJECTS = {
-    "person", "car", "bus", "truck", "bicycle", "motorcycle"
-}
+# core/decision.py
+
+PRIORITY = [
+    "person",
+    "bicycle",
+    "motorcycle",
+    "car",
+    "bus",
+    "truck",
+    "traffic light"
+]
 
 def choose_primary_threat(results):
+    """
+    Choose the most important object to alert on.
+    """
     if not results:
         return None
 
+    # Keep only objects we care about
     filtered = [
         r for r in results
-        if r.get("object") in IMPORTANT_OBJECTS
+        if r.get("object") in PRIORITY
     ]
 
     if not filtered:
         return None
 
-    # Prefer closest known distance
-    filtered.sort(
-        key=lambda r: (
-            r["distance_m"] is None,
-            r["distance_m"] if r["distance_m"] else float("inf")
+    def sort_key(r):
+        obj_priority = PRIORITY.index(r["object"])
+        distance = r["distance_m"]
+        return (
+            obj_priority,
+            distance if distance is not None else float("inf")
         )
-    )
 
+    filtered.sort(key=sort_key)
     return filtered[0]
