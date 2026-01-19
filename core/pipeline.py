@@ -10,22 +10,22 @@ def run_navigation_pipeline(left_image, right_image, metadata, prev_results=None
     """
     Main perception pipeline.
     """
-
-    detections = detect_objects(left_image)
     results = []
 
+    detections = detect_objects(left_image)
+
     for det in detections:
-        label = det.get("object") or det.get("label")
-        confidence = det.get("confidence", 0.0)
+        label = det.get("label")
+        confidence = det.get("confidence")
         bbox = det.get("bbox")
 
-        # Distance estimation (may return None)
-       distance = estimate_distance(bbox, metadata)
+        # Distance (currently stubbed)
+        distance = estimate_distance(bbox, metadata)
 
-        # Risk assessment MUST allow None
+        # Risk
         risk = assess_risk(label, distance)
 
-        # Motion (safe even if bbox is None)
+        # Motion (optional)
         motion = analyze_motion(
             label=label,
             bbox=bbox,
