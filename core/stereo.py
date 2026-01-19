@@ -1,18 +1,24 @@
+# core/stereo.py
+
 def estimate_distance(bbox, metadata):
+    """
+    Simple monocular approximation.
+    """
     if bbox is None:
         return None
 
     focal = metadata.get("focal_length_px")
     baseline = metadata.get("baseline_m")
 
-    if not focal or not baseline:
+    if focal is None or baseline is None:
         return None
 
     x1, y1, x2, y2 = bbox
-    pixel_width = abs(x2 - x1)
+    width = max(1, x2 - x1)
 
-    if pixel_width == 0:
-        return None
+    distance = (focal * baseline) / width
 
-    # Fake depth model (placeholder)
-    return round((focal * baseline) / pixel_width, 2)
+    # 🔒 Sanity clamp
+    distance = max(0.5, min(distance, 50.0))
+
+    return round(distance, 2)
