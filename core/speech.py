@@ -1,27 +1,20 @@
-"""
-Speech generation logic.
-Converts pipeline results into spoken messages.
-"""
+# core/speech.py
 
-def generate_message(result):
+def generate_message(result, motion=None):
     obj = result["object"]
-    distance = result.get("distance_m")
     risk = result.get("risk", "unknown")
+    distance = result.get("distance_m")
 
     if distance is None:
-        if risk == "high":
-            return f"Warning. {obj} detected nearby. Distance unknown."
-        elif risk == "medium":
-            return f"Caution. {obj} detected. Distance unknown."
-        else:
-            return f"Notice. {obj} detected at an unknown distance."
+        base = f"{obj} detected at an unknown distance."
+    else:
+        base = f"{obj} detected at {distance:.1f} meters."
 
-    # Distance is known
-    distance = round(distance, 1)
+    if motion == "approaching":
+        return f"Warning. {base} Approaching."
+    if motion == "receding":
+        return f"Notice. {base} Moving away."
 
     if risk == "high":
-        return f"Warning. {obj} detected {distance} meters ahead."
-    elif risk == "medium":
-        return f"Caution. {obj} detected {distance} meters away."
-    else:
-        return f"{obj} detected {distance} meters ahead."
+        return f"Warning. {base}"
+    return f"Notice. {base}"
