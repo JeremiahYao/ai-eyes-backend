@@ -1,12 +1,14 @@
 """
 Main processing pipeline for AI Eyes backend.
 
-This file connects:
+This file CONNECTS:
 - Object detection (YOLO)
 - Stereo distance estimation (parallax / trigonometry)
 - Navigation-level output (objects + distances)
 
-No API, no hosting logic here.
+NO API
+NO hosting
+NO UI
 """
 
 from .detector import detect_objects
@@ -15,13 +17,12 @@ from .stereo import estimate_distance
 
 def process_frame(image, camera_id, metadata=None):
     """
-    Basic single-frame processor (used for testing / extension).
+    Single-frame processor (used for testing or rear camera).
 
-    image: numpy image
+    image: numpy array
     camera_id: 'left', 'right', or 'rear'
-    metadata: dictionary (focal length, baseline, etc.)
+    metadata: optional dictionary
     """
-
     if metadata is None:
         metadata = {}
 
@@ -35,29 +36,32 @@ def process_frame(image, camera_id, metadata=None):
 
 def run_navigation_pipeline(left_image, right_image, metadata):
     """
-    Full navigation pipeline using stereo vision.
+    Full stereo navigation pipeline.
 
     Steps:
-    1. Detect objects in left & right images
-    2. Match detections (simple version)
-    3. Estimate distance using disparity
-    4. Return navigation-ready results
+    1. Detect objects in left image
+    2. Detect objects in right image
+    3. Estimate distance using parallax
+    4. Return navigation-ready output
     """
 
-    # Run object detection
+    # 1️⃣ Object detection
     detections_left = detect_objects(left_image)
     detections_right = detect_objects(right_image)
 
     results = []
 
-    # ⚠️ Temporary simple matching using zip
-    # (Will be improved later with proper object matching)
-    for dl, dr in zip(detections_left, detections_right):
+    # 2️⃣ TEMPORARY simple matching (same index)
+    # Later this will be replaced with proper matching logic
+    for i in range(min(len(detections_left), len(detections_right))):
+        dl = detections_left[i]
+        dr = detections_right[i]
 
-        # Bounding box center x-coordinates
+        # 3️⃣ Compute x-center of bounding boxes
         x_left = (dl["bbox_xyxy"][0] + dl["bbox_xyxy"][2]) / 2
         x_right = (dr["bbox_xyxy"][0] + dr["bbox_xyxy"][2]) / 2
 
+        # 4️⃣ Distance estimation (TRIGONOMETRY happens here)
         distance = estimate_distance(
             x_left=x_left,
             x_right=x_right,
@@ -65,6 +69,7 @@ def run_navigation_pipeline(left_image, right_image, metadata):
             baseline_m=metadata["baseline_m"]
         )
 
+        # 5️⃣ Navigation-level output
         results.append({
             "object": dl["class_name"],
             "confidence": dl["confidence"],
