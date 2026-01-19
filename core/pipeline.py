@@ -1,44 +1,36 @@
-# core/pipeline.py
-
-from core.detector import detect_objects
 from core.stereo import estimate_distance
 from core.risk import assess_risk
 from core.motion import analyze_motion
+from core.detector import detect_objects
 
-
-def run_navigation_pipeline(left_image, right_image, metadata, prev_results=None):
-    """
-    Main perception pipeline.
-    """
+def run_navigation_pipeline(
+    left_image,
+    right_image,
+    metadata,
+    prev_results=None
+):
+    detections = detect_objects(left_image)
     results = []
 
-    detections = detect_objects(left_image)
-
     for det in detections:
-        label = det.get("label")
-        confidence = det.get("confidence")
+        # Accept both formats just in case
+        label = det.get("object") or det.get("label")
+        confidence = det.get("confidence", 0.0)
         bbox = det.get("bbox")
 
-        # Distance (currently stubbed)
+        if label is None:
+            continue
+
         distance = estimate_distance(bbox, metadata)
-
-        # Risk
         risk = assess_risk(label, distance)
-
-        # Motion (optional)
-        motion = analyze_motion(
-            label=label,
-            bbox=bbox,
-            prev_results=prev_results
-        )
+        motion = analyze_motion(label, bbox, prev_results)
 
         results.append({
             "object": label,
             "confidence": confidence,
             "distance_m": distance,
             "risk": risk,
-            "motion": motion,
-            "bbox": bbox
+            "motion": motion
         })
 
     return results
