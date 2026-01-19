@@ -1,0 +1,3 @@
+def run_navigation_pipeline(left_image, right_image, metadata):
+    ...
+    return final_results
