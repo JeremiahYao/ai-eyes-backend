@@ -1,36 +1,25 @@
-# core/decision.py
-
-PRIORITY_ORDER = {
-    "person": 3,
-    "bicycle": 3,
-    "car": 2,
-    "bus": 2,
-    "truck": 2,
-    "motorcycle": 2,
-    "traffic light": 1
+IMPORTANT_OBJECTS = {
+    "person", "car", "bus", "truck", "bicycle", "motorcycle"
 }
 
 def choose_primary_threat(results):
-    """
-    Choose the most important object even if
-    distance and risk are unknown.
-    """
-
     if not results:
         return None
 
-    best = None
-    best_score = -1
+    filtered = [
+        r for r in results
+        if r.get("object") in IMPORTANT_OBJECTS
+    ]
 
-    for r in results:
-        label = r.get("object")
-        confidence = r.get("confidence", 0)
+    if not filtered:
+        return None
 
-        base_score = PRIORITY_ORDER.get(label, 0)
-        score = base_score + confidence
+    # Prefer closest known distance
+    filtered.sort(
+        key=lambda r: (
+            r["distance_m"] is None,
+            r["distance_m"] if r["distance_m"] else float("inf")
+        )
+    )
 
-        if score > best_score:
-            best = r
-            best_score = score
-
-    return best
+    return filtered[0]
