@@ -1,43 +1,37 @@
 # core/memory.py
 
 class TemporalMemory:
-    def __init__(self, cooldown_frames=5, distance_threshold=0.5):
+    def __init__(self, distance_delta=1.0):
         self.last_object = None
         self.last_distance = None
-        self.cooldown = 0
-        self.cooldown_frames = cooldown_frames
-        self.distance_threshold = distance_threshold
+        self.distance_delta = distance_delta
 
-    def analyze(self, current):
+    def analyze(self, primary):
         """
-        Returns: (should_alert, motion)
-        motion = 'approaching', 'receding', or None
+        Decide whether to alert based on change.
         """
-        if current is None:
-            self.last_object = None
-            self.last_distance = None
-            self.cooldown = 0
+        if primary is None:
             return False, None
 
-        motion = None
+        obj = primary["object"]
+        dist = primary["distance_m"]
 
-        if (
-            self.last_object == current["object"]
-            and self.last_distance is not None
-            and current["distance_m"] is not None
-        ):
-            delta = self.last_distance - current["distance_m"]
-            if abs(delta) > self.distance_threshold:
-                motion = "approaching" if delta > 0 else "receding"
+        # First alert ever
+        if self.last_object is None:
+            self.last_object = obj
+            self.last_distance = dist
+            return True, "new"
 
-        if self.cooldown > 0:
-            self.cooldown -= 1
-            alert = False
-        else:
-            alert = True
-            self.cooldown = self.cooldown_frames
+        # Object changed
+        if obj != self.last_object:
+            self.last_object = obj
+            self.last_distance = dist
+            return True, "changed"
 
-        self.last_object = current["object"]
-        self.last_distance = current["distance_m"]
+        # Distance significantly changed
+        if dist is not None and self.last_distance is not None:
+            if abs(dist - self.last_distance) >= self.distance_delta:
+                self.last_distance = dist
+                return True, "approaching"
 
-        return alert, motion
+        return False, None
