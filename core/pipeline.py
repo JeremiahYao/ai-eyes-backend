@@ -15,8 +15,8 @@ def run_navigation_pipeline(left_image, right_image, metadata, prev_results=None
     results = []
 
     for det in detections:
-        label = det["label"]
-        confidence = det["confidence"]
+        label = det.get("object") or det.get("label")
+        confidence = det.get("confidence", 0.0)
         bbox = det.get("bbox")
 
         # Distance estimation (may return None)
