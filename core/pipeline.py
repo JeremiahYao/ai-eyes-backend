@@ -37,7 +37,8 @@ def run_navigation_pipeline(left_image, right_image, metadata, prev_results=None
             "confidence": confidence,
             "distance_m": distance,
             "risk": risk,
-            "motion": motion
+            "motion": motion,
+            "bbox": bbox
         })
 
     return results
