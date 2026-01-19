@@ -1,27 +1,27 @@
 """
-Speech / message generation logic.
-Converts pipeline results into human-readable messages.
+Speech generation logic.
+Converts pipeline results into spoken messages.
 """
 
 def generate_message(result):
-    object_name = result["object"]
-    distance = result["distance_m"]
-    risk = result["risk"]
+    obj = result["object"]
+    distance = result.get("distance_m")
+    risk = result.get("risk", "unknown")
 
-    # Distance phrase
     if distance is None:
-        distance_text = "at an unknown distance"
-    else:
-        distance_text = f"{distance:.1f} meters ahead"
+        if risk == "high":
+            return f"Warning. {obj} detected nearby. Distance unknown."
+        elif risk == "medium":
+            return f"Caution. {obj} detected. Distance unknown."
+        else:
+            return f"Notice. {obj} detected at an unknown distance."
 
-    # Risk-based phrasing
+    # Distance is known
+    distance = round(distance, 1)
+
     if risk == "high":
-        prefix = "⚠️ Warning!"
+        return f"Warning. {obj} detected {distance} meters ahead."
     elif risk == "medium":
-        prefix = "Caution:"
+        return f"Caution. {obj} detected {distance} meters away."
     else:
-        prefix = "Info:"
-
-    message = f"{prefix} {object_name.capitalize()} detected {distance_text}. Risk level: {risk}."
-
-    return message
+        return f"{obj} detected {distance} meters ahead."
