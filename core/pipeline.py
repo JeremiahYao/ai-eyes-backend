@@ -1,16 +1,13 @@
-
 """
 Main processing pipeline for AI Eyes backend.
 
-This file CONNECTS:
+This pipeline connects:
 - Object detection (YOLO)
-- Stereo distance estimation (parallax / trigonometry)
+- Stereo distance estimation (placeholder for now)
 - Risk assessment
-- Navigation-level output
+- Temporal motion estimation (approaching / receding / stationary)
 
-NO API
-NO hosting
-NO UI
+No API, no hosting logic here.
 """
 
 from .detector import detect_objects
@@ -18,21 +15,20 @@ from .stereo import estimate_distance
 from .risk import assess_risk
 from .motion import estimate_motion
 
-# Global memory (simple version)
-_previous_detections = {}
+# ------------------------------------------------------------------
+# Simple global memory for previous frame (Step 11)
+# ------------------------------------------------------------------
+_previous_bboxes = {}
+
 
 def process_frame(image, camera_id, metadata=None):
     """
-    Single-frame processor.
-    Used for testing or single-camera (e.g. rear camera).
+    Basic single-frame processor (used for testing / extension).
 
-    image: numpy array
+    image: numpy image
     camera_id: 'left', 'right', or 'rear'
-    metadata: optional dictionary
+    metadata: dictionary (optional)
     """
-    if metadata is None:
-        metadata = {}
-
     detections = detect_objects(image)
 
     return {
@@ -43,51 +39,51 @@ def process_frame(image, camera_id, metadata=None):
 
 def run_navigation_pipeline(left_image, right_image, metadata):
     """
-    Full stereo navigation pipeline.
+    Full navigation pipeline.
 
     Steps:
-    1. Detect objects in left image
-    2. Detect objects in right image
-    3. Estimate distance using parallax
-    4. Assess risk
-    5. Return navigation-ready output
+    1. Detect objects
+    2. (Optional) Stereo distance estimation
+    3. Risk assessment
+    4. Temporal motion estimation (Step 11)
     """
 
-    # 1️⃣ Object detection
+    global _previous_bboxes
+
     detections_left = detect_objects(left_image)
-    detections_right = detect_objects(right_image)
 
     results = []
 
-    # 2️⃣ TEMPORARY simple matching (by index)
-    # Later this will be replaced with proper matching logic
-    num_pairs = min(len(detections_left), len(detections_right))
+    for idx, det in enumerate(detections_left):
+        class_name = det["class_name"]
+        confidence = det["confidence"]
+        bbox = det["bbox_xyxy"]
 
-    for i in range(num_pairs):
-        dl = detections_left[i]
-        dr = detections_right[i]
+        # ----------------------------------------------------------
+        # Distance estimation (disabled for now)
+        # ----------------------------------------------------------
+        distance_m = None  # expected to be None at this stage
 
-        # 3️⃣ Compute x-center of bounding boxes
-        x_left = (dl["bbox_xyxy"][0] + dl["bbox_xyxy"][2]) / 2
-        x_right = (dr["bbox_xyxy"][0] + dr["bbox_xyxy"][2]) / 2
+        # ----------------------------------------------------------
+        # Risk assessment
+        # ----------------------------------------------------------
+        risk = assess_risk(class_name, distance_m)
 
-        # 4️⃣ Distance estimation (TRIGONOMETRY happens here)
-        distance = estimate_distance(
-            x_left=x_left,
-            x_right=x_right,
-            focal_length_px=metadata["focal_length_px"],
-            baseline_m=metadata["baseline_m"]
-        )
+        # ----------------------------------------------------------
+        # Motion estimation (Step 11)
+        # ----------------------------------------------------------
+        prev_bbox = _previous_bboxes.get(idx)
+        motion = estimate_motion(prev_bbox, bbox)
 
-        # 5️⃣ Risk assessment
-        risk = assess_risk(dl["class_name"], distance)
+        # Save bbox for next frame
+        _previous_bboxes[idx] = bbox
 
-        # 6️⃣ Navigation-level output
         results.append({
-            "object": dl["class_name"],
-            "confidence": dl["confidence"],
-            "distance_m": distance,
-            "risk": risk
+            "object": class_name,
+            "confidence": confidence,
+            "distance_m": distance_m,
+            "risk": risk,
+            "motion": motion
         })
 
     return results
