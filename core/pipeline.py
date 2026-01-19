@@ -9,8 +9,8 @@ This file connects:
 No API, no hosting logic here.
 """
 
-from core.detector import detect_objects
-from core.stereo import estimate_distance
+from .detector import detect_objects
+from .stereo import estimate_distance
 
 
 def process_frame(image, camera_id, metadata=None):
