@@ -1,3 +1,4 @@
+
 """
 Main processing pipeline for AI Eyes backend.
 
@@ -15,7 +16,10 @@ NO UI
 from .detector import detect_objects
 from .stereo import estimate_distance
 from .risk import assess_risk
+from .motion import estimate_motion
 
+# Global memory (simple version)
+_previous_detections = {}
 
 def process_frame(image, camera_id, metadata=None):
     """
