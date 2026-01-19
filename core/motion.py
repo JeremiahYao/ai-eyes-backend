@@ -1,33 +1,26 @@
 # core/motion.py
 
-"""
-Simple motion analysis across frames.
-(Currently defaults to stationary — safe placeholder)
-"""
-
-_previous_bboxes = {}
-
-
-def analyze_motion(results):
+def analyze_motion(label, bbox, prev_results=None):
     """
-    Adds a 'motion' field to each detection.
-    Currently assumes stationary (placeholder logic).
+    Very simple motion analysis.
+    If no previous frame data exists, return 'stationary'.
     """
 
-    global _previous_bboxes
+    if prev_results is None:
+        return "stationary"
 
-    for r in results:
-        obj = r.get("object")
-        bbox = r.get("bbox")
+    # Try to find the same object in previous frame
+    for prev in prev_results:
+        if prev.get("object") == label:
+            prev_bbox = prev.get("bbox")
+            if prev_bbox and bbox:
+                # Simple area comparison
+                prev_area = (prev_bbox[2] - prev_bbox[0]) * (prev_bbox[3] - prev_bbox[1])
+                curr_area = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1])
 
-        if bbox is None:
-            r["motion"] = "unknown"
-            continue
+                if curr_area > prev_area * 1.1:
+                    return "approaching"
+                elif curr_area < prev_area * 0.9:
+                    return "moving away"
 
-        # Placeholder logic
-        r["motion"] = "stationary"
-
-        # Store for future frames
-        _previous_bboxes[obj] = bbox
-
-    return results
+    return "stationary"
