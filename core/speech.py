@@ -1,16 +1,11 @@
-# core/speech.py
-
 def generate_message(result):
-    obj = result.get("object", "object")
-    risk = result.get("risk", "unknown")
-    distance = result.get("distance_m")
+    obj = result.get("object") or "object"
+    dist = result.get("distance_m")
+    motion = result.get("motion", "unknown")
 
-    if distance is None:
+    if dist is None:
         return f"Notice. {obj} detected at an unknown distance."
-
-    if risk == "high":
-        return f"Warning! {obj} very close. Please stop."
-    elif risk == "medium":
-        return f"Caution. {obj} nearby."
+    elif dist < 5:
+        return f"Warning. {obj} very close at {dist:.1f} meters."
     else:
-        return f"Notice. {obj} detected at {distance:.1f} meters."
+        return f"Notice. {obj} detected at {dist:.1f} meters."
