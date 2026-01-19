@@ -1,9 +1,9 @@
 # core/speech.py
 
 def generate_message(result):
-    obj = result["object"]
-    risk = result["risk"]
-    distance = result["distance_m"]
+    obj = result.get("object", "object")
+    risk = result.get("risk", "unknown")
+    distance = result.get("distance_m")
 
     if distance is None:
         return f"Notice. {obj} detected at an unknown distance."
@@ -14,4 +14,3 @@ def generate_message(result):
         return f"Caution. {obj} nearby."
     else:
         return f"Notice. {obj} detected at {distance:.1f} meters."
-}."
