@@ -1,34 +1,27 @@
 """
-Speech / user feedback generation logic.
-Converts perception + risk data into human-readable messages.
+Speech / message generation logic.
+Converts pipeline results into human-readable messages.
 """
 
 def generate_message(result):
-    """
-    result example:
-    {
-        "object": "person",
-        "confidence": 0.83,
-        "distance_m": 4.2,
-        "risk": "medium"
-    }
-    """
+    object_name = result["object"]
+    distance = result["distance_m"]
+    risk = result["risk"]
 
-    obj = result.get("object", "object")
-    distance = result.get("distance_m")
-    risk = result.get("risk", "unknown")
-
+    # Distance phrase
     if distance is None:
         distance_text = "at an unknown distance"
     else:
-        distance_text = f"{distance:.1f} meters away"
+        distance_text = f"{distance:.1f} meters ahead"
 
+    # Risk-based phrasing
     if risk == "high":
-        prefix = "Warning!"
+        prefix = "⚠️ Warning!"
     elif risk == "medium":
-        prefix = "Caution."
+        prefix = "Caution:"
     else:
-        prefix = "Notice."
+        prefix = "Info:"
 
-    return f"{prefix} {obj} detected {distance_text}."
+    message = f"{prefix} {object_name.capitalize()} detected {distance_text}. Risk level: {risk}."
 
+    return message
