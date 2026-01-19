@@ -1,12 +1,18 @@
-# core/stereo.py
-
 def estimate_distance(bbox, metadata):
-    """
-    Placeholder stereo distance estimator.
-    Returns None until real stereo logic is implemented.
-    """
     if bbox is None:
         return None
 
-    # Future work: use bbox width + focal length + baseline
-    return None
+    focal = metadata.get("focal_length_px")
+    baseline = metadata.get("baseline_m")
+
+    if not focal or not baseline:
+        return None
+
+    x1, y1, x2, y2 = bbox
+    pixel_width = abs(x2 - x1)
+
+    if pixel_width == 0:
+        return None
+
+    # Fake depth model (placeholder)
+    return round((focal * baseline) / pixel_width, 2)
