@@ -1,89 +1,85 @@
 """
 Main processing pipeline for AI Eyes backend.
-
-This pipeline connects:
-- Object detection (YOLO)
-- Stereo distance estimation (placeholder for now)
-- Risk assessment
-- Temporal motion estimation (approaching / receding / stationary)
-
-No API, no hosting logic here.
+Connects detection, stereo (optional), risk, motion, and semantics.
 """
 
 from .detector import detect_objects
 from .stereo import estimate_distance
 from .risk import assess_risk
-from .motion import estimate_motion
-
-# ------------------------------------------------------------------
-# Simple global memory for previous frame (Step 11)
-# ------------------------------------------------------------------
-_previous_bboxes = {}
 
 
-def process_frame(image, camera_id, metadata=None):
-    """
-    Basic single-frame processor (used for testing / extension).
+# ---------- Helpers ----------
 
-    image: numpy image
-    camera_id: 'left', 'right', or 'rear'
-    metadata: dictionary (optional)
-    """
-    detections = detect_objects(image)
+def estimate_direction(bbox, image_width):
+    if bbox is None:
+        return "unknown"
 
-    return {
-        "camera_id": camera_id,
-        "detections": detections
-    }
+    x1, _, x2, _ = bbox
+    x_center = (x1 + x2) / 2
+    ratio = x_center / image_width
 
+    if ratio < 0.33:
+        return "left"
+    elif ratio < 0.66:
+        return "center"
+    else:
+        return "right"
+
+
+def estimate_distance_bucket(bbox):
+    if bbox is None:
+        return "unknown"
+
+    x1, y1, x2, y2 = bbox
+    area = (x2 - x1) * (y2 - y1)
+
+    if area > 40000:
+        return "near"
+    elif area > 15000:
+        return "medium"
+    else:
+        return "far"
+
+
+# ---------- Pipeline ----------
 
 def run_navigation_pipeline(left_image, right_image, metadata):
     """
     Full navigation pipeline.
-
-    Steps:
-    1. Detect objects
-    2. (Optional) Stereo distance estimation
-    3. Risk assessment
-    4. Temporal motion estimation (Step 11)
     """
 
-    global _previous_bboxes
-
     detections_left = detect_objects(left_image)
+    detections_right = detect_objects(right_image)
 
     results = []
 
-    for idx, det in enumerate(detections_left):
-        class_name = det["class_name"]
-        confidence = det["confidence"]
-        bbox = det["bbox_xyxy"]
+    for dl, dr in zip(detections_left, detections_right):
 
-        # ----------------------------------------------------------
-        # Distance estimation (disabled for now)
-        # ----------------------------------------------------------
-        distance_m = None  # expected to be None at this stage
+        bbox_l = dl.get("bbox_xyxy")
 
-        # ----------------------------------------------------------
-        # Risk assessment
-        # ----------------------------------------------------------
-        risk = assess_risk(class_name, distance_m)
+        # Stereo distance (optional)
+        distance = None
+        if bbox_l is not None and "focal_length_px" in metadata:
+            x_left = (bbox_l[0] + bbox_l[2]) / 2
+            x_right = x_left  # temporary fallback
+            distance = estimate_distance(
+                x_left=x_left,
+                x_right=x_right,
+                focal_length_px=metadata["focal_length_px"],
+                baseline_m=metadata["baseline_m"]
+            )
 
-        # ----------------------------------------------------------
-        # Motion estimation (Step 11)
-        # ----------------------------------------------------------
-        prev_bbox = _previous_bboxes.get(idx)
-        motion = estimate_motion(prev_bbox, bbox)
-
-        # Save bbox for next frame
-        _previous_bboxes[idx] = bbox
+        direction = estimate_direction(bbox_l, left_image.shape[1])
+        distance_bucket = estimate_distance_bucket(bbox_l)
+        risk = assess_risk(dl["class_name"], distance)
 
         results.append({
-            "object": class_name,
-            "confidence": confidence,
-            "distance_m": distance_m,
-            "risk": risk,
-            "motion": motion
+            "object": dl["class_name"],
+            "confidence": dl["confidence"],
+            "distance_m": distance,
+            "distance_bucket": distance_bucket,
+            "direction": direction,
+            "risk": risk
         })
 
     return results
